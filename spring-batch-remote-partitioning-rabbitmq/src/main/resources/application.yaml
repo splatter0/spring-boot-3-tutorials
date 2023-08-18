@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/test?useCursorFetch=true&rewriteBatchedStatements=true
+    username: root
+    password: mysql
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  rabbitmq:
+    host: 127.0.0.1
+    port: 5672
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: true
