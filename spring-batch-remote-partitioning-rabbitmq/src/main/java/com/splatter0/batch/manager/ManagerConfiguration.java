@@ -1,15 +1,11 @@
-package com.splatter0.manager;
+package com.splatter0.batch.manager;
 
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
-import org.springframework.batch.core.configuration.JobRegistry;
-import org.springframework.batch.core.configuration.support.JobRegistryBeanPostProcessor;
 import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
-import org.springframework.batch.core.partition.support.SimplePartitioner;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.integration.config.annotation.EnableBatchIntegration;
 import org.springframework.batch.integration.partition.RemotePartitioningManagerStepBuilderFactory;
@@ -32,17 +28,12 @@ public class ManagerConfiguration {
     }
 
     @Bean
-    public Queue requestsQueue() {
-        return new Queue("requests");
-    }
-
-    @Bean
-    public Queue repliesQueue() {
-        return new Queue("replies");
-    }
-
-    @Bean
     public DirectChannel managerRequests() {
+        return new DirectChannel();
+    }
+
+    @Bean
+    public DirectChannel managerReplies() {
         return new DirectChannel();
     }
 
@@ -51,11 +42,6 @@ public class ManagerConfiguration {
         return IntegrationFlow.from(managerRequests())
                 .handle(Amqp.outboundAdapter(rabbitTemplate).routingKey("requests"))
                 .get();
-    }
-
-    @Bean
-    public DirectChannel managerReplies() {
-        return new DirectChannel();
     }
 
     @Bean
@@ -69,8 +55,8 @@ public class ManagerConfiguration {
     public Step managerStep() {
         return this.managerStepBuilderFactory
                 .get("partitionerStep")
-                .partitioner("workerStep", new SimplePartitioner())
-                .gridSize(3)
+                .partitioner("workerStep", new CustomerPartitioner())
+                .gridSize(16)
                 .outputChannel(managerRequests())
                 .inputChannel(managerReplies())
                 .build();
@@ -82,12 +68,5 @@ public class ManagerConfiguration {
                 .start(managerStep())
                 .incrementer(new RunIdIncrementer())
                 .build();
-    }
-
-    @Bean
-    public JobRegistryBeanPostProcessor jobRegistryBeanPostProcessor(JobRegistry jobRegistry) {
-        final JobRegistryBeanPostProcessor answer = new JobRegistryBeanPostProcessor();
-        answer.setJobRegistry(jobRegistry);
-        return answer;
     }
 }
