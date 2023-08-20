@@ -5,6 +5,8 @@ import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.integration.async.AsyncItemProcessor;
+import org.springframework.batch.integration.async.AsyncItemWriter;
 import org.springframework.batch.integration.config.annotation.EnableBatchIntegration;
 import org.springframework.batch.integration.partition.RemotePartitioningWorkerStepBuilderFactory;
 import org.springframework.batch.item.ItemProcessor;
@@ -16,12 +18,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.integration.amqp.dsl.Amqp;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import javax.sql.DataSource;
 
@@ -29,6 +35,7 @@ import javax.sql.DataSource;
 @Configuration
 @EnableBatchIntegration
 public class WorkerConfiguration {
+
     private final RemotePartitioningWorkerStepBuilderFactory workerStepBuilderFactory;
 
     public WorkerConfiguration(
@@ -76,11 +83,18 @@ public class WorkerConfiguration {
                 .get("workerStep")
                 .inputChannel(workerRequests())
                 .outputChannel(workerReplies())
-                .<Integer, Customer>chunk(10, transactionManager)
+                .<Integer, Future<Customer>>chunk(5, transactionManager)
                 .reader(workerReader(null))
-                .processor(workerProcessor())
-                .writer(workerWriter(null))
+                .processor(asyncWorkerProcessor())
+                .writer(asyncWorkerWriter())
                 .build();
+    }
+
+    @Bean
+    public ItemWriter<Future<Customer>> asyncWorkerWriter() {
+        var asyncItemWriter = new AsyncItemWriter<Customer>();
+        asyncItemWriter.setDelegate(workerWriter(null));
+        return asyncItemWriter;
     }
 
     @Bean
@@ -93,8 +107,20 @@ public class WorkerConfiguration {
     }
 
     @Bean
+    public ItemProcessor<Integer, Future<Customer>> asyncWorkerProcessor() {
+        var asyncItemProcessor = new AsyncItemProcessor<Integer, Customer>();
+        asyncItemProcessor.setDelegate(workerProcessor());
+        asyncItemProcessor.setTaskExecutor(batchAsyncExecutor());
+        return asyncItemProcessor;
+    }
+
+    @Bean
     public ItemProcessor<Integer, Customer> workerProcessor() {
-        return Customer::new;
+        return item -> {
+            Thread.sleep(1000L);
+            System.out.println(Thread.currentThread().getName() + "-item-" + item);
+            return new Customer(item);
+        };
     }
 
     @Bean
@@ -102,5 +128,16 @@ public class WorkerConfiguration {
     public ItemReader<Integer> workerReader(
             @Value("#{stepExecutionContext['ids']}") List<Integer> ids) {
         return new ListItemReader<>(ids);
+    }
+
+    @Bean
+    public TaskExecutor batchAsyncExecutor() {
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(16);
+        executor.setMaxPoolSize(32);
+        executor.setQueueCapacity(100);
+        executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+        executor.setThreadNamePrefix("batchAsync-");
+        return executor;
     }
 }

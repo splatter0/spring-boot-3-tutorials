@@ -5,7 +5,6 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.job.builder.JobBuilder;
-import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.integration.config.annotation.EnableBatchIntegration;
 import org.springframework.batch.integration.partition.RemotePartitioningManagerStepBuilderFactory;
@@ -56,7 +55,7 @@ public class ManagerConfiguration {
         return this.managerStepBuilderFactory
                 .get("partitionerStep")
                 .partitioner("workerStep", new CustomerPartitioner())
-                .gridSize(16)
+                .gridSize(32)
                 .outputChannel(managerRequests())
                 .inputChannel(managerReplies())
                 .build();
@@ -66,7 +65,7 @@ public class ManagerConfiguration {
     public Job remotePartitioningJob(JobRepository jobRepository) {
         return new JobBuilder("partitioningJob", jobRepository)
                 .start(managerStep())
-                .incrementer(new RunIdIncrementer())
+                // .incrementer(new RunIdIncrementer())
                 .build();
     }
 }
