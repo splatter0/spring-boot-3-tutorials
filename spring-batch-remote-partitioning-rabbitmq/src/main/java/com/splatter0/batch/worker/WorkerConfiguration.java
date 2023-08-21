@@ -111,7 +111,7 @@ public class WorkerConfiguration {
     public ItemProcessor<Integer, Future<Customer>> asyncWorkerProcessor() {
         var asyncItemProcessor = new AsyncItemProcessor<Integer, Customer>();
         asyncItemProcessor.setDelegate(workerProcessor());
-        asyncItemProcessor.setTaskExecutor(batchAsyncExecutor());
+        asyncItemProcessor.setTaskExecutor(asyncExecutor());
         return asyncItemProcessor;
     }
 
@@ -132,13 +132,16 @@ public class WorkerConfiguration {
     }
 
     @Bean
-    public TaskExecutor batchAsyncExecutor() {
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(16);
-        executor.setMaxPoolSize(32);
-        executor.setQueueCapacity(100);
+    public TaskExecutor asyncExecutor() {
+        var executor = new ThreadPoolTaskExecutor();
+        int count = Runtime.getRuntime().availableProcessors();
+        executor.setCorePoolSize(count * 2);
+        executor.setMaxPoolSize(count * 4);
+        executor.setQueueCapacity(200);
+        executor.setKeepAliveSeconds(60);
+        executor.setThreadNamePrefix("default-async-executor-");
         executor.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
-        executor.setThreadNamePrefix("batchAsync-");
+        executor.initialize();
         return executor;
     }
 }
