@@ -55,7 +55,7 @@ public class ManagerConfiguration {
         return this.managerStepBuilderFactory
                 .get("partitionerStep")
                 .partitioner("workerStep", new CustomerPartitioner())
-                .gridSize(32)
+                .gridSize(3)
                 .outputChannel(managerRequests())
                 .inputChannel(managerReplies())
                 .build();

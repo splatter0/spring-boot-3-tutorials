@@ -118,6 +118,10 @@ public class WorkerConfiguration {
     @Bean
     public ItemProcessor<Integer, Customer> workerProcessor() {
         return item -> {
+            // mock exception
+            if (item == 88) {
+                throw new RuntimeException();
+            }
             Thread.sleep(1000L);
             System.out.println(Thread.currentThread().getName() + "-item-" + item);
             return new Customer(item);
