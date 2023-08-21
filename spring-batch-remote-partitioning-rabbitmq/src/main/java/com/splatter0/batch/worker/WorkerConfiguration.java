@@ -31,6 +31,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import javax.sql.DataSource;
 
+@SuppressWarnings("DataFlowIssue")
 @Profile("worker")
 @Configuration
 @EnableBatchIntegration
