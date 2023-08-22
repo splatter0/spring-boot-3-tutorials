@@ -60,7 +60,6 @@ public class WorkerConfiguration {
                         Kafka.inboundChannelAdapter(
                                 consumerFactory, new ConsumerProperties("requests")))
                 .channel(workerRequests())
-                .log()
                 .get();
     }
 
@@ -68,7 +67,6 @@ public class WorkerConfiguration {
     public IntegrationFlow workerOutboundFlow(KafkaTemplate kafkaTemplate) {
         return IntegrationFlow.from(workerReplies())
                 .handle(Kafka.outboundChannelAdapter(kafkaTemplate).topic("replies"))
-                .log()
                 .get();
     }
 

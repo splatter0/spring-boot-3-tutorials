@@ -41,7 +41,6 @@ public class ManagerConfiguration {
     public IntegrationFlow managerOutboundFlow(KafkaTemplate kafkaTemplate) {
         return IntegrationFlow.from(managerRequests())
                 .handle(Kafka.outboundChannelAdapter(kafkaTemplate).topic("requests"))
-                .log()
                 .get();
     }
 
@@ -51,7 +50,6 @@ public class ManagerConfiguration {
                         Kafka.inboundChannelAdapter(
                                 consumerFactory, new ConsumerProperties("replies")))
                 .channel(managerReplies())
-                .log()
                 .get();
     }
 
