@@ -60,6 +60,7 @@ public class WorkerConfiguration {
                         Kafka.inboundChannelAdapter(
                                 consumerFactory, new ConsumerProperties("requests")))
                 .channel(workerRequests())
+                .log()
                 .get();
     }
 
@@ -67,6 +68,7 @@ public class WorkerConfiguration {
     public IntegrationFlow workerOutboundFlow(KafkaTemplate kafkaTemplate) {
         return IntegrationFlow.from(workerReplies())
                 .handle(Kafka.outboundChannelAdapter(kafkaTemplate).topic("replies"))
+                .log()
                 .get();
     }
 
@@ -111,9 +113,9 @@ public class WorkerConfiguration {
     public ItemProcessor<Integer, Customer> workerProcessor() {
         return item -> {
             // mock exception
-            if (item == 88) {
-                throw new RuntimeException();
-            }
+            //            if (item == 88) {
+            //                throw new RuntimeException();
+            //            }
             Thread.sleep(1000L);
             System.out.println(Thread.currentThread().getName() + "-item-" + item);
             return new Customer(item);

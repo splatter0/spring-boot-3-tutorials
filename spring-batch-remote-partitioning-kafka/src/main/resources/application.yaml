@@ -12,10 +12,10 @@ spring:
       bootstrap-servers: localhost:29092
       group-id: dev
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      value-deserializer: com.splatter0.batch.support.KafkaStringOrByteDeserializer
       properties:
         spring.json.trusted.packages: "*"
     producer:
       bootstrap-servers: localhost:29092
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
-      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      value-serializer: com.splatter0.batch.support.KafkaStringOrByteSerializer

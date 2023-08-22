@@ -51,6 +51,7 @@ public class ManagerConfiguration {
                         Kafka.inboundChannelAdapter(
                                 consumerFactory, new ConsumerProperties("replies")))
                 .channel(managerReplies())
+                .log()
                 .get();
     }
 
