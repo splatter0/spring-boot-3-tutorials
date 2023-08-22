@@ -101,7 +101,7 @@ public class WorkerConfiguration {
     @Bean
     public ItemWriter<Customer> workerWriter(DataSource dataSource) {
         return new JdbcBatchItemWriterBuilder<Customer>()
-                .sql("insert into customers (id) values (:id)")
+                .sql("INSERT INTO CUSTOMERS (ID) VALUES (:ID)")
                 .dataSource(dataSource)
                 .beanMapped()
                 .build();
