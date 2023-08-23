@@ -12,7 +12,6 @@ public class KafkaStringOrByteDeserializer implements Deserializer<Object> {
         try {
             return new DefaultDeserializer().deserialize(new ByteArrayInputStream(bytes));
         } catch (IOException e) {
-            e.printStackTrace();
             return null;
         }
     }
