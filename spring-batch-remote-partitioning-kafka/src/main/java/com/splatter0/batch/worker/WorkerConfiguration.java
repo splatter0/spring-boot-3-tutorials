@@ -31,7 +31,12 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import javax.sql.DataSource;
 
-@SuppressWarnings("DataFlowIssue")
+@SuppressWarnings({
+    "DataFlowIssue",
+    "rawtypes",
+    "unchecked",
+    "SpringJavaInjectionPointsAutowiringInspection"
+})
 @Profile("worker")
 @Configuration
 @EnableBatchIntegration

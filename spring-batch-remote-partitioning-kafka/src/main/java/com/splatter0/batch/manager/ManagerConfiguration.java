@@ -16,6 +16,7 @@ import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.listener.ConsumerProperties;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 @Profile("manager")
 @Configuration
 @EnableBatchIntegration
