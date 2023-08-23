@@ -73,7 +73,7 @@ public class WorkerConfiguration {
                 .get("workerStep")
                 .inputChannel(workerRequests())
                 .outputChannel(workerReplies())
-                .<Integer, Future<Customer>>chunk(5, transactionManager)
+                .<Integer, Future<Customer>>chunk(100, transactionManager)
                 .reader(workerReader(null))
                 .processor(asyncWorkerProcessor())
                 .writer(asyncWorkerWriter())
@@ -107,10 +107,6 @@ public class WorkerConfiguration {
     @Bean
     public ItemProcessor<Integer, Customer> workerProcessor() {
         return item -> {
-            // mock exception
-            if (item == 88) {
-                throw new RuntimeException();
-            }
             Thread.sleep(1000L);
             System.out.println(Thread.currentThread().getName() + "-item-" + item);
             return new Customer(item);

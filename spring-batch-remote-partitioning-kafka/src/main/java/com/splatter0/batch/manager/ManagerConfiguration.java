@@ -6,15 +6,18 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.integration.config.annotation.EnableBatchIntegration;
 import org.springframework.batch.integration.partition.RemotePartitioningManagerStepBuilderFactory;
+import org.springframework.batch.integration.partition.StepExecutionRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
+import org.springframework.expression.common.LiteralExpression;
 import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
+import org.springframework.integration.expression.FunctionExpression;
 import org.springframework.integration.kafka.dsl.Kafka;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.listener.ConsumerProperties;
+import org.springframework.messaging.Message;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 @Profile("manager")
@@ -41,15 +44,23 @@ public class ManagerConfiguration {
     @Bean
     public IntegrationFlow managerOutboundFlow(KafkaTemplate kafkaTemplate) {
         return IntegrationFlow.from(managerRequests())
-                .handle(Kafka.outboundChannelAdapter(kafkaTemplate).topic("requests"))
+                .handle(
+                        Kafka.outboundChannelAdapter(kafkaTemplate)
+                                .topicExpression(new LiteralExpression("requests"))
+                                .partitionIdExpression(
+                                        new FunctionExpression<Message<StepExecutionRequest>>(
+                                                (m) -> {
+                                                    StepExecutionRequest executionRequest =
+                                                            m.getPayload();
+                                                    return executionRequest.getStepExecutionId()
+                                                            % 3;
+                                                })))
                 .get();
     }
 
     @Bean
     public IntegrationFlow managerInboundFlow(ConsumerFactory consumerFactory) {
-        return IntegrationFlow.from(
-                        Kafka.inboundChannelAdapter(
-                                consumerFactory, new ConsumerProperties("replies")))
+        return IntegrationFlow.from(Kafka.messageDrivenChannelAdapter(consumerFactory, "replies"))
                 .channel(managerReplies())
                 .get();
     }

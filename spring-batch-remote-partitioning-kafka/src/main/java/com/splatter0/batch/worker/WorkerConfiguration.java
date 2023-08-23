@@ -21,7 +21,6 @@ import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.kafka.dsl.Kafka;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.listener.ConsumerProperties;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -61,9 +60,7 @@ public class WorkerConfiguration {
 
     @Bean
     public IntegrationFlow workerInboundFlow(ConsumerFactory consumerFactory) {
-        return IntegrationFlow.from(
-                        Kafka.inboundChannelAdapter(
-                                consumerFactory, new ConsumerProperties("requests")))
+        return IntegrationFlow.from(Kafka.messageDrivenChannelAdapter(consumerFactory, "requests"))
                 .channel(workerRequests())
                 .get();
     }
@@ -81,7 +78,7 @@ public class WorkerConfiguration {
                 .get("workerStep")
                 .inputChannel(workerRequests())
                 .outputChannel(workerReplies())
-                .<Integer, Future<Customer>>chunk(5, transactionManager)
+                .<Integer, Future<Customer>>chunk(100, transactionManager)
                 .reader(workerReader(null))
                 .processor(asyncWorkerProcessor())
                 .writer(asyncWorkerWriter())
@@ -115,10 +112,6 @@ public class WorkerConfiguration {
     @Bean
     public ItemProcessor<Integer, Customer> workerProcessor() {
         return item -> {
-            // mock exception
-            //            if (item == 88) {
-            //                throw new RuntimeException();
-            //            }
             Thread.sleep(1000L);
             System.out.println(Thread.currentThread().getName() + "-item-" + item);
             return new Customer(item);
