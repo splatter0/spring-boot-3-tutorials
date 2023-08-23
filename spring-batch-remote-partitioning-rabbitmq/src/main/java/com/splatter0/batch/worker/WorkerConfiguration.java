@@ -1,6 +1,5 @@
 package com.splatter0.batch.worker;
 
-import org.springframework.amqp.core.Queue;
 import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.batch.core.Step;
@@ -42,16 +41,6 @@ public class WorkerConfiguration {
     public WorkerConfiguration(
             RemotePartitioningWorkerStepBuilderFactory workerStepBuilderFactory) {
         this.workerStepBuilderFactory = workerStepBuilderFactory;
-    }
-
-    @Bean
-    public Queue requestsQueue() {
-        return new Queue("requests");
-    }
-
-    @Bean
-    public Queue repliesQueue() {
-        return new Queue("replies");
     }
 
     @Bean
