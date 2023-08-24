@@ -1,4 +1,4 @@
-package com.splatter0.batch.manager;
+package com.splatter0.batch.job;
 
 import org.springframework.batch.core.partition.support.Partitioner;
 import org.springframework.batch.item.ExecutionContext;

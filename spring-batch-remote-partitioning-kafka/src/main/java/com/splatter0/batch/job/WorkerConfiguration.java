@@ -1,4 +1,7 @@
-package com.splatter0.batch.worker;
+package com.splatter0.batch.job;
+
+import static com.splatter0.batch.support.Constants.MANAGER_REQUEST_TOPIC_NAME;
+import static com.splatter0.batch.support.Constants.WORKER_REPLY_TOPIC_NAME;
 
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -11,16 +14,17 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.support.ListItemReader;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.task.TaskExecutor;
-import org.springframework.integration.channel.DirectChannel;
 import org.springframework.integration.dsl.IntegrationFlow;
 import org.springframework.integration.kafka.dsl.Kafka;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.messaging.MessageChannel;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -49,35 +53,32 @@ public class WorkerConfiguration {
     }
 
     @Bean
-    public DirectChannel workerRequests() {
-        return new DirectChannel();
-    }
-
-    @Bean
-    public DirectChannel workerReplies() {
-        return new DirectChannel();
-    }
-
-    @Bean
-    public IntegrationFlow workerInboundFlow(ConsumerFactory consumerFactory) {
-        return IntegrationFlow.from(Kafka.messageDrivenChannelAdapter(consumerFactory, "requests"))
-                .channel(workerRequests())
+    public IntegrationFlow workerInboundFlow(
+            ConsumerFactory consumerFactory, @Qualifier("requests") MessageChannel requests) {
+        return IntegrationFlow.from(
+                        Kafka.messageDrivenChannelAdapter(
+                                consumerFactory, MANAGER_REQUEST_TOPIC_NAME))
+                .channel(requests)
                 .get();
     }
 
     @Bean
-    public IntegrationFlow workerOutboundFlow(KafkaTemplate kafkaTemplate) {
-        return IntegrationFlow.from(workerReplies())
-                .handle(Kafka.outboundChannelAdapter(kafkaTemplate).topic("replies"))
+    public IntegrationFlow workerOutboundFlow(
+            KafkaTemplate kafkaTemplate, @Qualifier("replies") MessageChannel replies) {
+        return IntegrationFlow.from(replies)
+                .handle(Kafka.outboundChannelAdapter(kafkaTemplate).topic(WORKER_REPLY_TOPIC_NAME))
                 .get();
     }
 
     @Bean
-    public Step workerStep(PlatformTransactionManager transactionManager) {
+    public Step workerStep(
+            PlatformTransactionManager transactionManager,
+            @Qualifier("requests") MessageChannel requests,
+            @Qualifier("replies") MessageChannel replies) {
         return this.workerStepBuilderFactory
                 .get("workerStep")
-                .inputChannel(workerRequests())
-                .outputChannel(workerReplies())
+                .inputChannel(requests)
+                .outputChannel(replies)
                 .<Integer, Future<Customer>>chunk(100, transactionManager)
                 .reader(workerReader(null))
                 .processor(asyncWorkerProcessor())

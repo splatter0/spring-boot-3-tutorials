@@ -1,3 +1,3 @@
-package com.splatter0.batch.worker;
+package com.splatter0.batch.job;
 
 public record Customer(Integer id) {}
