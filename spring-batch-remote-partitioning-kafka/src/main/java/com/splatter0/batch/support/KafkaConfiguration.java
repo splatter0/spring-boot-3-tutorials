@@ -1,7 +1,6 @@
 package com.splatter0.batch.support;
 
-import static com.splatter0.batch.support.Constants.MANAGER_REQUEST_TOPIC_NAME;
-import static com.splatter0.batch.support.Constants.TOPIC_PARTITION_COUNT;
+import static com.splatter0.batch.support.Constants.*;
 
 import org.apache.kafka.clients.admin.NewTopic;
 import org.springframework.context.annotation.Bean;
@@ -23,9 +22,14 @@ public class KafkaConfiguration {
     }
 
     @Bean
-    public NewTopic topic() {
+    public NewTopic requestsTopic() {
         return TopicBuilder.name(MANAGER_REQUEST_TOPIC_NAME)
                 .partitions(TOPIC_PARTITION_COUNT)
                 .build();
+    }
+
+    @Bean
+    public NewTopic repliesTopic() {
+        return TopicBuilder.name(WORKER_REPLY_TOPIC_NAME).build();
     }
 }
